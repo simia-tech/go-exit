@@ -26,7 +26,7 @@ import (
 func main() {
 	exit.SetTimeout(2 * time.Second)
 
-	counterExitSignalChan := exit.Signal("counter")
+	counterExitSignalChan := exit.NewSignalChan("counter")
 	go func() {
 		counter := 0
 
@@ -43,8 +43,9 @@ func main() {
 
 		switch {
 		case counter%5 == 0:
-			// Don't send a return via errChan to simulate an infinited running go routine.
-			// The timeout should be hit in this case.
+			// Don't send a return via errChan to simulate
+			// an infinite running go routine. The timeout
+			// should be hit in this case.
 		case counter%2 == 1:
 			errChan <- fmt.Errorf("exit on the odd counter %d", counter)
 		default:

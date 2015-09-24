@@ -23,7 +23,7 @@ import (
 )
 
 func TestExitWithoutError(t *testing.T) {
-	exitSignalChan := exit.Signal("one")
+	exitSignalChan := exit.NewSignalChan("one")
 	go func() {
 		errChan := <-exitSignalChan
 		errChan <- nil
@@ -34,13 +34,13 @@ func TestExitWithoutError(t *testing.T) {
 }
 
 func TestExitOfTwoGoroutines(t *testing.T) {
-	exitSignalChanOne := exit.Signal("one")
+	exitSignalChanOne := exit.NewSignalChan("one")
 	go func() {
 		errChan := <-exitSignalChanOne
 		errChan <- fmt.Errorf("err one")
 	}()
 
-	exitSignalChanTwo := exit.Signal("two")
+	exitSignalChanTwo := exit.NewSignalChan("two")
 	go func() {
 		errChan := <-exitSignalChanTwo
 		errChan <- fmt.Errorf("err two")
@@ -55,11 +55,11 @@ func TestExitOfTwoGoroutines(t *testing.T) {
 func TestExitWithTimeout(t *testing.T) {
 	exit.SetTimeout(100 * time.Millisecond)
 
-	exitSignalChan := exit.Signal("one")
+	exitSignalChan := exit.NewSignalChan("one")
 	go func() {
 		<-exitSignalChan
 	}()
-	exit.Signal("two")
+	exit.NewSignalChan("two")
 
 	report := exit.Exit()
 	assertEqual(t, 2, report.Len())

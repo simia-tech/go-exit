@@ -41,8 +41,8 @@ func SetTimeout(value time.Duration) {
 	timeout = value
 }
 
-// Signal creates a new SignalChan and returns it.
-func Signal(name string) SignalChan {
+// NewSignalChan creates a new SignalChan and returns it.
+func NewSignalChan(name string) SignalChan {
 	signalChansMutex.Lock()
 	defer signalChansMutex.Unlock()
 
