@@ -48,8 +48,8 @@ func TestExitOfTwoGoroutines(t *testing.T) {
 
 	report := exit.Exit()
 	assertEqual(t, 2, report.Len())
-	assertEqual(t, "err one", report["one"].Error())
-	assertEqual(t, "err two", report["two"].Error())
+	assertEqual(t, "err one", report.Get("one").Error())
+	assertEqual(t, "err two", report.Get("two").Error())
 }
 
 func TestExitWithTimeout(t *testing.T) {
@@ -63,6 +63,6 @@ func TestExitWithTimeout(t *testing.T) {
 
 	report := exit.Exit()
 	assertEqual(t, 2, report.Len())
-	assertEqual(t, exit.ErrTimeout, report["one"])
-	assertEqual(t, exit.ErrTimeout, report["two"])
+	assertEqual(t, exit.ErrTimeout, report.Get("one"))
+	assertEqual(t, exit.ErrTimeout, report.Get("two"))
 }

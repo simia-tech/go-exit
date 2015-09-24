@@ -56,20 +56,17 @@ func Signal(name string) SignalChan {
 // Exit sends an ErrChan through all the previously generated SignalChans
 // and waits until all returned an error or nil. The received errors will be
 // returned in an error report.
-func Exit() Report {
+func Exit() *Report {
 	signalChansMutex.Lock()
 	defer signalChansMutex.Unlock()
 
-	report := make(Report)
-	reportMutex := &sync.Mutex{}
+	report := NewReport()
 	wg := &sync.WaitGroup{}
 	for name, signalChan := range signalChans {
 		wg.Add(1)
 		go func(name string, signalChan SignalChan) {
 			if err := exit(name, signalChan); err != nil {
-				reportMutex.Lock()
-				report[name] = err
-				reportMutex.Unlock()
+				report.Set(name, err)
 			}
 			wg.Done()
 		}(name, signalChan)
