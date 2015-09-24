@@ -8,7 +8,7 @@ The library helps to end the go routines in your program and collects potential 
 
 ## Example
 
-```golang
+```go
 func main() {
 	exit.SetTimeout(2 * time.Second)
 
