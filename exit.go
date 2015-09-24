@@ -15,6 +15,8 @@
 package exit
 
 import (
+	"os"
+	"os/signal"
 	"sync"
 	"time"
 )
@@ -78,6 +80,16 @@ func Exit() *Report {
 		return nil
 	}
 	return report
+}
+
+// ExitOn blocks until the process receives one of the provided signals and
+// than calls Exit.
+func ExitOn(osSignales ...os.Signal) *Report {
+	osSignalChan := make(chan os.Signal)
+	signal.Notify(osSignalChan, osSignales...)
+	<-osSignalChan
+
+	return Exit()
 }
 
 func exit(name string, signalChan SignalChan) error {

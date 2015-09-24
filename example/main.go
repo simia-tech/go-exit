@@ -17,12 +17,15 @@ package main
 import (
 	"fmt"
 	"os"
+	"syscall"
 	"time"
 
 	"github.com/simia-tech/go-exit"
 )
 
 func main() {
+	exit.SetTimeout(2 * time.Second)
+
 	counterExitSignalChan := exit.Signal("counter")
 	go func() {
 		counter := 0
@@ -38,17 +41,21 @@ func main() {
 			}
 		}
 
-		if counter%2 == 0 {
-			errChan <- nil
-		} else {
+		switch {
+		case counter%5 == 0:
+			// Don't send a return via errChan to simulate an infinited running go routine.
+			// The timeout should be hit in this case.
+		case counter%2 == 1:
 			errChan <- fmt.Errorf("exit on the odd counter %d", counter)
+		default:
+			errChan <- nil
 		}
 	}()
 
-	time.Sleep(6 * time.Second)
-	fmt.Println()
-	if report := exit.Exit(); report != nil {
+	if report := exit.ExitOn(syscall.SIGINT); report != nil {
+		fmt.Println()
 		report.WriteTo(os.Stderr)
 		os.Exit(-1)
 	}
+	fmt.Println()
 }
