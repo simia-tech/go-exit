@@ -60,14 +60,20 @@ func (r *Report) Len() int {
 	return len(r.errors)
 }
 
-// Fprint prints the report to the provided io.Writer.
-func (r *Report) Fprint(w io.Writer) {
+// WriteTo prints the report to the provided io.Writer.
+func (r *Report) WriteTo(w io.Writer) (int64, error) {
 	r.mutex.RLock()
 	defer r.mutex.RUnlock()
 
+	total := int64(0)
 	for name, err := range r.errors {
-		fmt.Fprintf(w, "%s: %v\n", name, err)
+		n, err := fmt.Fprintf(w, "%s: %v\n", name, err)
+		if err != nil {
+			return total, err
+		}
+		total += int64(n)
 	}
+	return total, nil
 }
 
 // Error implements the error interface.

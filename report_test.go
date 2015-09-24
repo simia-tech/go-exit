@@ -21,12 +21,14 @@ import (
 	"github.com/simia-tech/go-exit"
 )
 
-func TestReportFprint(t *testing.T) {
+func TestReportWriteTo(t *testing.T) {
 	report := exit.NewReport()
 	report.Set("one", exit.ErrTimeout)
 
 	buffer := &bytes.Buffer{}
-	report.Fprint(buffer)
+	bytes, err := report.WriteTo(buffer)
+	assertNil(t, err)
+	assertEqual(t, int64(13), bytes)
 	assertEqual(t, "one: timeout\n", buffer.String())
 }
 

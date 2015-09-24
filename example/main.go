@@ -48,7 +48,7 @@ func main() {
 	time.Sleep(6 * time.Second)
 	fmt.Println()
 	if report := exit.Exit(); report != nil {
-		report.Fprint(os.Stderr)
+		report.WriteTo(os.Stderr)
 		os.Exit(-1)
 	}
 }
