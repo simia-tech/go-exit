@@ -1,4 +1,4 @@
-# The exit strategy for your go routines. [![GoDoc](https://godoc.org/github.com/simia-tech/go-exit?status.svg)](http://godoc.org/github.com/simia-tech/go-exit)
+# A exit strategy for go routines. [![GoDoc](https://godoc.org/github.com/simia-tech/go-exit?status.svg)](http://godoc.org/github.com/simia-tech/go-exit)
 
 The library helps to end the go routines in your program and collects potential errors.
 
