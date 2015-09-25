@@ -12,7 +12,10 @@ The library helps to end the go routines in your program and collects potential 
 func main() {
 	exit.SetTimeout(2 * time.Second)
 
-	counterExitSignalChan := exit.NewSignalChan("counter")
+	counterExitSignalChan, err := exit.NewSignalChan("counter")
+	if err != nil {
+		log.Fatal(err)
+	}
 	go func() {
 		counter := 0
 

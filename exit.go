@@ -42,17 +42,17 @@ func SetTimeout(value time.Duration) {
 }
 
 // NewSignalChan creates a new SignalChan and returns it.
-func NewSignalChan(name string) SignalChan {
+func NewSignalChan(name string) (SignalChan, error) {
 	signalChansMutex.Lock()
 	defer signalChansMutex.Unlock()
 
-	if signalChan, ok := signalChans[name]; ok {
-		return signalChan
+	if _, ok := signalChans[name]; ok {
+		return nil, ErrNameAlreadyExists
 	}
 
 	signalChan := make(SignalChan, 1)
 	signalChans[name] = signalChan
-	return signalChan
+	return signalChan, nil
 }
 
 // Exit sends an ErrChan through all the previously generated SignalChans
@@ -80,6 +80,14 @@ func Exit() *Report {
 		return nil
 	}
 	return report
+}
+
+// Reset removes all created SignalChans without sending the exit signal.
+func Reset() {
+	signalChansMutex.Lock()
+	defer signalChansMutex.Unlock()
+
+	signalChans = make(map[string]SignalChan)
 }
 
 // ExitOn blocks until the process receives one of the provided signals and

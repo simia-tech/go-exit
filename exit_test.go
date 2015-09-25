@@ -22,8 +22,18 @@ import (
 	"github.com/simia-tech/go-exit"
 )
 
+func TestTwoSignalChansWithSameName(t *testing.T) {
+	defer exit.Reset()
+
+	_, err := exit.NewSignalChan("one")
+	assertNil(t, err)
+	_, err = exit.NewSignalChan("one")
+	assertEqual(t, exit.ErrNameAlreadyExists, err)
+}
+
 func TestExitWithoutError(t *testing.T) {
-	exitSignalChan := exit.NewSignalChan("one")
+	exitSignalChan, err := exit.NewSignalChan("one")
+	assertNil(t, err)
 	go func() {
 		errChan := <-exitSignalChan
 		errChan <- nil
@@ -34,13 +44,15 @@ func TestExitWithoutError(t *testing.T) {
 }
 
 func TestExitOfTwoGoroutines(t *testing.T) {
-	exitSignalChanOne := exit.NewSignalChan("one")
+	exitSignalChanOne, err := exit.NewSignalChan("one")
+	assertNil(t, err)
 	go func() {
 		errChan := <-exitSignalChanOne
 		errChan <- fmt.Errorf("err one")
 	}()
 
-	exitSignalChanTwo := exit.NewSignalChan("two")
+	exitSignalChanTwo, err := exit.NewSignalChan("two")
+	assertNil(t, err)
 	go func() {
 		errChan := <-exitSignalChanTwo
 		errChan <- fmt.Errorf("err two")
@@ -54,8 +66,10 @@ func TestExitOfTwoGoroutines(t *testing.T) {
 
 func TestExitWithTimeout(t *testing.T) {
 	exit.SetTimeout(100 * time.Millisecond)
+	defer exit.SetTimeout(0)
 
-	exitSignalChan := exit.NewSignalChan("one")
+	exitSignalChan, err := exit.NewSignalChan("one")
+	assertNil(t, err)
 	go func() {
 		<-exitSignalChan
 	}()

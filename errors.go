@@ -18,5 +18,6 @@ import "errors"
 
 // Defines errors.
 var (
-	ErrTimeout = errors.New("timeout")
+	ErrTimeout           = errors.New("timeout")
+	ErrNameAlreadyExists = errors.New("name already exists")
 )
