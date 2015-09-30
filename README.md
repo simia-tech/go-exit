@@ -1,8 +1,8 @@
 # An exit strategy for go routines.
 
 [![Build Status](https://travis-ci.org/simia-tech/go-exit.svg)](https://travis-ci.org/simia-tech/go-exit)
-[![Code Coverage](http://gocover.io/_badge/github.com/simia-tech/go-exit)](http://gocover.io/github.com/simia-tech/go-exit)
-[![Documentation](https://godoc.org/github.com/simia-tech/go-exit?status.svg)](http://godoc.org/github.com/simia-tech/go-exit)
+[![Code Coverage](http://gocover.io/_badge/github.com/simia-tech/go-exit.svg)](http://gocover.io/github.com/simia-tech/go-exit)
+[![Documentation](https://godoc.org/github.com/simia-tech/go-exit?status.svg)](https://godoc.org/github.com/simia-tech/go-exit)
 
 The library helps to end the go routines in your program and collects potential errors.
 
