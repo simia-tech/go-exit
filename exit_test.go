@@ -16,6 +16,7 @@ package exit_test
 
 import (
 	"fmt"
+	"syscall"
 	"testing"
 	"time"
 
@@ -79,4 +80,19 @@ func TestExitWithTimeout(t *testing.T) {
 	assertEqual(t, 2, report.Len())
 	assertEqual(t, exit.ErrTimeout, report.Get("one"))
 	assertEqual(t, exit.ErrTimeout, report.Get("two"))
+}
+
+func TestExitOnSignal(t *testing.T) {
+	exitSignalChan, err := exit.NewSignalChan("one")
+	assertNil(t, err)
+	go func() {
+		errChan := <-exitSignalChan
+		errChan <- nil
+	}()
+
+	go func() {
+		syscall.Kill(syscall.Getpid(), syscall.SIGHUP)
+	}()
+	report := exit.ExitOn(syscall.SIGHUP)
+	assertNil(t, report)
 }
