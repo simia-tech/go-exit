@@ -69,17 +69,23 @@ func TestExitWithTimeout(t *testing.T) {
 	exit.SetTimeout(100 * time.Millisecond)
 	defer exit.SetTimeout(0)
 
-	exitSignalChan, err := exit.NewSignalChan("one")
+	exitSignalChanOne, err := exit.NewSignalChan("one")
 	assertNil(t, err)
 	go func() {
-		<-exitSignalChan
+		errChan := <-exitSignalChanOne
+		errChan <- nil
 	}()
-	exit.NewSignalChan("two")
+	exitSignalChanTwo, err := exit.NewSignalChan("two")
+	assertNil(t, err)
+	go func() {
+		<-exitSignalChanTwo
+	}()
+	exit.NewSignalChan("three")
 
 	report := exit.Exit()
 	assertEqual(t, 2, report.Len())
-	assertEqual(t, exit.ErrTimeout, report.Get("one"))
 	assertEqual(t, exit.ErrTimeout, report.Get("two"))
+	assertEqual(t, exit.ErrTimeout, report.Get("three"))
 }
 
 func TestExitOnSignal(t *testing.T) {
