@@ -17,6 +17,7 @@ package exit
 import (
 	"fmt"
 	"io"
+	"sort"
 	"strings"
 	"sync"
 )
@@ -66,8 +67,8 @@ func (r *Report) WriteTo(w io.Writer) (int64, error) {
 	defer r.mutex.RUnlock()
 
 	total := int64(0)
-	for name, err := range r.errors {
-		n, err := fmt.Fprintf(w, "%s: %v\n", name, err)
+	for _, name := range r.sortedNames() {
+		n, err := fmt.Fprintf(w, "%s: %v\n", name, r.errors[name])
 		if err != nil {
 			return total, err
 		}
@@ -82,8 +83,17 @@ func (r *Report) Error() string {
 	defer r.mutex.RUnlock()
 
 	var parts []string
-	for name, err := range r.errors {
-		parts = append(parts, fmt.Sprintf("%s: %v", name, err))
+	for _, name := range r.sortedNames() {
+		parts = append(parts, fmt.Sprintf("%s: %v", name, r.errors[name]))
 	}
 	return strings.Join(parts, " / ")
+}
+
+func (r *Report) sortedNames() []string {
+	names := []string{}
+	for name := range r.errors {
+		names = append(names, name)
+	}
+	sort.Strings(names)
+	return names
 }
