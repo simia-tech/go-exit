@@ -16,6 +16,7 @@ package exit_test
 
 import (
 	"bytes"
+	"io"
 	"testing"
 
 	"github.com/simia-tech/go-exit"
@@ -30,6 +31,16 @@ func TestReportWriteTo(t *testing.T) {
 	assertNil(t, err)
 	assertEqual(t, int64(13), bytes)
 	assertEqual(t, "one: timeout\n", buffer.String())
+}
+
+func TestReportWriteToFailingWriter(t *testing.T) {
+	report := exit.NewReport()
+	report.Set("one", exit.ErrTimeout)
+
+	r, w := io.Pipe()
+	r.Close()
+	_, err := report.WriteTo(w)
+	assertNotNil(t, err)
 }
 
 func TestReportErrorInterface(t *testing.T) {

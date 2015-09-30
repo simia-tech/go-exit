@@ -31,6 +31,12 @@ func assertNil(tb testing.TB, actual interface{}) {
 	}
 }
 
+func assertNotNil(tb testing.TB, actual interface{}) {
+	if isNil(actual) {
+		tb.Fatalf("expected not nil, got %#v", actual)
+	}
+}
+
 func isNil(value interface{}) bool {
 	if value == nil {
 		return true
