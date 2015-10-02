@@ -25,16 +25,12 @@ import (
 // an error after an actor has shut down.
 type ErrChan chan error
 
-// SignalChan defines a channel of ErrChan that is used to signal an
-// actor to shut down.
-type SignalChan chan ErrChan
-
 // Exit defines an exit that contains multiple SignalChans.
 type Exit struct {
 	Name string
 
-	signalChans      map[string]SignalChan
-	signalChansMutex sync.Mutex
+	signals      []*Signal
+	signalsMutex sync.Mutex
 
 	timeout time.Duration
 }
@@ -42,8 +38,8 @@ type Exit struct {
 // New returns a new exit with the provided name.
 func New(name string) *Exit {
 	return &Exit{
-		Name:        name,
-		signalChans: make(map[string]SignalChan),
+		Name:    name,
+		signals: []*Signal{},
 	}
 }
 
@@ -52,40 +48,44 @@ func (e *Exit) SetTimeout(value time.Duration) {
 	e.timeout = value
 }
 
-// NewSignalChan creates a new SignalChan and returns it.
-func (e *Exit) NewSignalChan(name string) (SignalChan, error) {
-	e.signalChansMutex.Lock()
-	defer e.signalChansMutex.Unlock()
+// HasTimeout returns true if a timeout is set.
+func (e *Exit) HasTimeout() bool {
+	return e.timeout != 0
+}
 
-	if _, ok := e.signalChans[name]; ok {
-		return nil, ErrNameAlreadyExists
-	}
+// NewSignal creates a new Signal, attaches it to the exit and returns it.
+func (e *Exit) NewSignal(name string) *Signal {
+	e.signalsMutex.Lock()
+	defer e.signalsMutex.Unlock()
 
-	signalChan := make(SignalChan, 1)
-	e.signalChans[name] = signalChan
-	return signalChan, nil
+	signal := NewSignal(name)
+	e.signals = append(e.signals, signal)
+	return signal
 }
 
 // Exit sends an ErrChan through all the previously generated SignalChans
 // and waits until all returned an error or nil. The received errors will be
 // returned in an error report.
 func (e *Exit) Exit() *Report {
-	e.signalChansMutex.Lock()
-	defer e.signalChansMutex.Unlock()
+	e.signalsMutex.Lock()
+	defer e.signalsMutex.Unlock()
 
 	report := NewReport(e.Name)
 	wg := &sync.WaitGroup{}
-	for name, signalChan := range e.signalChans {
+	for _, signal := range e.signals {
 		wg.Add(1)
-		go func(name string, signalChan SignalChan) {
-			if err := e.exit(name, signalChan); err != nil {
-				report.Set(name, err)
+		go func(signal *Signal) {
+			if e.HasTimeout() && !signal.HasTimeout() {
+				signal.SetTimeout(e.timeout)
+			}
+			if err := signal.Exit(); err != nil {
+				report.Set(signal.Name, err)
 			}
 			wg.Done()
-		}(name, signalChan)
-		delete(e.signalChans, name)
+		}(signal)
 	}
 	wg.Wait()
+	e.signals = []*Signal{}
 
 	if report.Len() == 0 {
 		return nil
@@ -101,20 +101,4 @@ func (e *Exit) ExitOn(osSignales ...os.Signal) *Report {
 	<-osSignalChan
 
 	return e.Exit()
-}
-
-func (e *Exit) exit(name string, signalChan SignalChan) error {
-	errChan := make(ErrChan)
-	signalChan <- errChan
-
-	if e.timeout == 0 {
-		return <-errChan
-	}
-
-	select {
-	case err := <-errChan:
-		return err
-	case <-time.After(e.timeout):
-		return ErrTimeout
-	}
 }

@@ -16,7 +16,6 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"os"
 	"syscall"
 	"time"
@@ -27,17 +26,14 @@ import (
 func main() {
 	exit.Main.SetTimeout(2 * time.Second)
 
-	counterExitSignalChan, err := exit.Main.NewSignalChan("counter")
-	if err != nil {
-		log.Fatal(err)
-	}
+	counterExitSignal := exit.Main.NewSignal("counter")
 	go func() {
 		counter := 0
 
 		var errChan exit.ErrChan
 		for errChan == nil {
 			select {
-			case errChan = <-counterExitSignalChan:
+			case errChan = <-counterExitSignal.Chan:
 				break
 			case <-time.After(1 * time.Second):
 				counter++

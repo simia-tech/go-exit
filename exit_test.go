@@ -23,22 +23,12 @@ import (
 	"github.com/simia-tech/go-exit"
 )
 
-func TestTwoSignalChansWithSameName(t *testing.T) {
-	e := exit.New("test")
-
-	_, err := e.NewSignalChan("one")
-	assertNil(t, err)
-	_, err = e.NewSignalChan("one")
-	assertEqual(t, exit.ErrNameAlreadyExists, err)
-}
-
 func TestExitWithoutError(t *testing.T) {
 	e := exit.New("test")
 
-	exitSignalChan, err := e.NewSignalChan("one")
-	assertNil(t, err)
+	exitSignal := e.NewSignal("one")
 	go func() {
-		errChan := <-exitSignalChan
+		errChan := <-exitSignal.Chan
 		errChan <- nil
 	}()
 
@@ -49,17 +39,15 @@ func TestExitWithoutError(t *testing.T) {
 func TestExitOfTwoGoroutines(t *testing.T) {
 	e := exit.New("test")
 
-	exitSignalChanOne, err := e.NewSignalChan("one")
-	assertNil(t, err)
+	exitSignalOne := e.NewSignal("one")
 	go func() {
-		errChan := <-exitSignalChanOne
+		errChan := <-exitSignalOne.Chan
 		errChan <- fmt.Errorf("err one")
 	}()
 
-	exitSignalChanTwo, err := e.NewSignalChan("two")
-	assertNil(t, err)
+	exitSignalTwo := e.NewSignal("two")
 	go func() {
-		errChan := <-exitSignalChanTwo
+		errChan := <-exitSignalTwo.Chan
 		errChan <- fmt.Errorf("err two")
 	}()
 
@@ -71,22 +59,18 @@ func TestExitOfTwoGoroutines(t *testing.T) {
 
 func TestExitWithTimeout(t *testing.T) {
 	e := exit.New("test")
-
 	e.SetTimeout(100 * time.Millisecond)
-	defer e.SetTimeout(0)
 
-	exitSignalChanOne, err := e.NewSignalChan("one")
-	assertNil(t, err)
+	exitSignalOne := e.NewSignal("one")
 	go func() {
-		errChan := <-exitSignalChanOne
+		errChan := <-exitSignalOne.Chan
 		errChan <- nil
 	}()
-	exitSignalChanTwo, err := e.NewSignalChan("two")
-	assertNil(t, err)
+	exitSignalTwo := e.NewSignal("two")
 	go func() {
-		<-exitSignalChanTwo
+		<-exitSignalTwo.Chan
 	}()
-	e.NewSignalChan("three")
+	e.NewSignal("three")
 
 	report := e.Exit()
 	assertEqual(t, 2, report.Len())
@@ -97,10 +81,9 @@ func TestExitWithTimeout(t *testing.T) {
 func TestExitOnSignal(t *testing.T) {
 	e := exit.New("test")
 
-	exitSignalChan, err := e.NewSignalChan("one")
-	assertNil(t, err)
+	exitSignal := e.NewSignal("one")
 	go func() {
-		errChan := <-exitSignalChan
+		errChan := <-exitSignal.Chan
 		errChan <- nil
 	}()
 

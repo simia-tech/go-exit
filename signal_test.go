@@ -12,11 +12,35 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package exit
+package exit_test
 
-import "errors"
+import (
+	"testing"
+	"time"
 
-// Defines errors.
-var (
-	ErrTimeout = errors.New("timeout")
+	"github.com/simia-tech/go-exit"
 )
+
+func TestSignalExitWithoutTimeout(t *testing.T) {
+	exitSignal := exit.NewSignal("one")
+	go func() {
+		errChan := <-exitSignal.Chan
+		errChan <- nil
+	}()
+
+	err := exitSignal.Exit()
+	assertNil(t, err)
+}
+
+func TestSignalExitWithTimeout(t *testing.T) {
+	exitSignal := exit.NewSignal("one")
+	exitSignal.SetTimeout(50 * time.Millisecond)
+	go func() {
+		errChan := <-exitSignal.Chan
+		time.Sleep(100 * time.Millisecond)
+		errChan <- nil
+	}()
+
+	err := exitSignal.Exit()
+	assertEqual(t, exit.ErrTimeout, err)
+}
