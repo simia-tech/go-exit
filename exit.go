@@ -28,7 +28,9 @@ type Exit struct {
 	signals      []*Signal
 	signalsMutex sync.Mutex
 
-	timeout time.Duration
+	timeout     time.Duration
+	afterEachFn func(error)
+	afterAllFn  func(*Report)
 }
 
 // New returns a new exit with the provided name.
@@ -47,6 +49,18 @@ func (e *Exit) SetTimeout(value time.Duration) {
 // HasTimeout returns true if a timeout is set.
 func (e *Exit) HasTimeout() bool {
 	return e.timeout != 0
+}
+
+// AfterEach registers a callback function that is called after each actor
+// that has exited.
+func (e *Exit) AfterEach(fn func(error)) {
+	e.afterEachFn = fn
+}
+
+// AfterAll registers a callback function that is called after all actors
+// has exited.
+func (e *Exit) AfterAll(fn func(*Report)) {
+	e.afterAllFn = fn
 }
 
 // NewSignal creates a new Signal, attaches it to the exit and returns it.
@@ -74,14 +88,22 @@ func (e *Exit) Exit() *Report {
 			if e.HasTimeout() && !signal.HasTimeout() {
 				signal.SetTimeout(e.timeout)
 			}
-			if err := signal.Exit(); err != nil {
+			err := signal.Exit()
+			if err != nil {
 				report.Set(signal.Name, err)
+			}
+			if e.afterEachFn != nil {
+				e.afterEachFn(err)
 			}
 			wg.Done()
 		}(signal)
 	}
 	wg.Wait()
 	e.signals = []*Signal{}
+
+	if e.afterAllFn != nil {
+		e.afterAllFn(report)
+	}
 
 	if report.Len() == 0 {
 		return nil

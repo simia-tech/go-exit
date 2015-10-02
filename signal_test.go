@@ -15,6 +15,7 @@
 package exit_test
 
 import (
+	"fmt"
 	"testing"
 	"time"
 
@@ -43,4 +44,21 @@ func TestSignalExitWithTimeout(t *testing.T) {
 
 	err := exitSignal.Exit()
 	assertEqual(t, exit.ErrTimeout, err)
+}
+
+func TestSignalAfterExitCallback(t *testing.T) {
+	var result error
+
+	exitSignal := exit.NewSignal("one")
+	exitSignal.AfterExit(func(err error) {
+		result = err
+	})
+	go func() {
+		reply := <-exitSignal.Chan
+		reply.Err(fmt.Errorf("one"))
+	}()
+
+	err := exitSignal.Exit()
+	assertNotNil(t, err)
+	assertEqual(t, "one", result.Error())
 }

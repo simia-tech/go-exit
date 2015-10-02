@@ -93,3 +93,32 @@ func TestExitOnSignal(t *testing.T) {
 	report := e.ExitOn(syscall.SIGHUP)
 	assertNil(t, report)
 }
+
+func TestExitAfterCallbacks(t *testing.T) {
+	e := exit.New("test")
+
+	exitSignalOne := e.NewSignal("one")
+	go func() {
+		reply := <-exitSignalOne.Chan
+		reply.Ok()
+	}()
+	exitSignalTwo := e.NewSignal("two")
+	go func() {
+		reply := <-exitSignalTwo.Chan
+		reply.Ok()
+	}()
+
+	eachCalled := 0
+	e.AfterEach(func(err error) {
+		eachCalled++
+	})
+	allCalled := 0
+	e.AfterAll(func(report *exit.Report) {
+		allCalled++
+	})
+
+	report := e.Exit()
+	assertNil(t, report)
+	assertEqual(t, 2, eachCalled)
+	assertEqual(t, 1, allCalled)
+}

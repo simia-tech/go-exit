@@ -21,7 +21,8 @@ type Signal struct {
 	Name string
 	Chan chan Reply
 
-	timeout time.Duration
+	timeout     time.Duration
+	afterExitFn func(error)
 }
 
 // NewSignal returns a new initialized signal with the provided name.
@@ -43,25 +44,38 @@ func (s *Signal) HasTimeout() bool {
 	return s.timeout != 0
 }
 
+// AfterExit registers a callback function that is called after the exit has been
+// performed.
+func (s *Signal) AfterExit(fn func(error)) {
+	s.afterExitFn = fn
+}
+
 // Exit performs the exit process for this specific signal.
-func (s *Signal) Exit() error {
+func (s *Signal) Exit() (err error) {
+	defer func() {
+		if s.afterExitFn != nil {
+			s.afterExitFn(err)
+		}
+	}()
 	reply := make(Reply)
 
 	if !s.HasTimeout() {
 		s.Chan <- reply
-		return <-reply
+		err = <-reply
+		return
 	}
 
 	select {
 	case s.Chan <- reply:
 	case <-time.After(s.timeout):
-		return ErrTimeout
+		err = ErrTimeout
+		return
 	}
 
 	select {
-	case err := <-reply:
-		return err
+	case err = <-reply:
 	case <-time.After(s.timeout):
-		return ErrTimeout
+		err = ErrTimeout
 	}
+	return
 }
