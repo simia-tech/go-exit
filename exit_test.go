@@ -24,72 +24,80 @@ import (
 )
 
 func TestTwoSignalChansWithSameName(t *testing.T) {
-	defer exit.Reset()
+	e := exit.New("test")
 
-	_, err := exit.NewSignalChan("one")
+	_, err := e.NewSignalChan("one")
 	assertNil(t, err)
-	_, err = exit.NewSignalChan("one")
+	_, err = e.NewSignalChan("one")
 	assertEqual(t, exit.ErrNameAlreadyExists, err)
 }
 
 func TestExitWithoutError(t *testing.T) {
-	exitSignalChan, err := exit.NewSignalChan("one")
+	e := exit.New("test")
+
+	exitSignalChan, err := e.NewSignalChan("one")
 	assertNil(t, err)
 	go func() {
 		errChan := <-exitSignalChan
 		errChan <- nil
 	}()
 
-	report := exit.Exit()
+	report := e.Exit()
 	assertNil(t, report)
 }
 
 func TestExitOfTwoGoroutines(t *testing.T) {
-	exitSignalChanOne, err := exit.NewSignalChan("one")
+	e := exit.New("test")
+
+	exitSignalChanOne, err := e.NewSignalChan("one")
 	assertNil(t, err)
 	go func() {
 		errChan := <-exitSignalChanOne
 		errChan <- fmt.Errorf("err one")
 	}()
 
-	exitSignalChanTwo, err := exit.NewSignalChan("two")
+	exitSignalChanTwo, err := e.NewSignalChan("two")
 	assertNil(t, err)
 	go func() {
 		errChan := <-exitSignalChanTwo
 		errChan <- fmt.Errorf("err two")
 	}()
 
-	report := exit.Exit()
+	report := e.Exit()
 	assertEqual(t, 2, report.Len())
 	assertEqual(t, "err one", report.Get("one").Error())
 	assertEqual(t, "err two", report.Get("two").Error())
 }
 
 func TestExitWithTimeout(t *testing.T) {
-	exit.SetTimeout(100 * time.Millisecond)
-	defer exit.SetTimeout(0)
+	e := exit.New("test")
 
-	exitSignalChanOne, err := exit.NewSignalChan("one")
+	e.SetTimeout(100 * time.Millisecond)
+	defer e.SetTimeout(0)
+
+	exitSignalChanOne, err := e.NewSignalChan("one")
 	assertNil(t, err)
 	go func() {
 		errChan := <-exitSignalChanOne
 		errChan <- nil
 	}()
-	exitSignalChanTwo, err := exit.NewSignalChan("two")
+	exitSignalChanTwo, err := e.NewSignalChan("two")
 	assertNil(t, err)
 	go func() {
 		<-exitSignalChanTwo
 	}()
-	exit.NewSignalChan("three")
+	e.NewSignalChan("three")
 
-	report := exit.Exit()
+	report := e.Exit()
 	assertEqual(t, 2, report.Len())
 	assertEqual(t, exit.ErrTimeout, report.Get("two"))
 	assertEqual(t, exit.ErrTimeout, report.Get("three"))
 }
 
 func TestExitOnSignal(t *testing.T) {
-	exitSignalChan, err := exit.NewSignalChan("one")
+	e := exit.New("test")
+
+	exitSignalChan, err := e.NewSignalChan("one")
 	assertNil(t, err)
 	go func() {
 		errChan := <-exitSignalChan
@@ -99,6 +107,6 @@ func TestExitOnSignal(t *testing.T) {
 	go func() {
 		syscall.Kill(syscall.Getpid(), syscall.SIGHUP)
 	}()
-	report := exit.ExitOn(syscall.SIGHUP)
+	report := e.ExitOn(syscall.SIGHUP)
 	assertNil(t, report)
 }

@@ -25,9 +25,9 @@ import (
 )
 
 func main() {
-	exit.SetTimeout(2 * time.Second)
+	exit.Main.SetTimeout(2 * time.Second)
 
-	counterExitSignalChan, err := exit.NewSignalChan("counter")
+	counterExitSignalChan, err := exit.Main.NewSignalChan("counter")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -57,7 +57,7 @@ func main() {
 		}
 	}()
 
-	if report := exit.ExitOn(syscall.SIGINT); report != nil {
+	if report := exit.Main.ExitOn(syscall.SIGINT); report != nil {
 		fmt.Println()
 		report.WriteTo(os.Stderr)
 		os.Exit(-1)

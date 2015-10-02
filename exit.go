@@ -29,50 +29,61 @@ type ErrChan chan error
 // actor to shut down.
 type SignalChan chan ErrChan
 
-var (
-	signalChans      = make(map[string]SignalChan)
-	signalChansMutex = &sync.Mutex{}
+// Exit defines an exit that contains multiple SignalChans.
+type Exit struct {
+	Name string
+
+	signalChans      map[string]SignalChan
+	signalChansMutex sync.Mutex
 
 	timeout time.Duration
-)
+}
+
+// New returns a new exit with the provided name.
+func New(name string) *Exit {
+	return &Exit{
+		Name:        name,
+		signalChans: make(map[string]SignalChan),
+	}
+}
 
 // SetTimeout sets a timeout for the actors to end during the exit process.
-func SetTimeout(value time.Duration) {
-	timeout = value
+func (e *Exit) SetTimeout(value time.Duration) {
+	e.timeout = value
 }
 
 // NewSignalChan creates a new SignalChan and returns it.
-func NewSignalChan(name string) (SignalChan, error) {
-	signalChansMutex.Lock()
-	defer signalChansMutex.Unlock()
+func (e *Exit) NewSignalChan(name string) (SignalChan, error) {
+	e.signalChansMutex.Lock()
+	defer e.signalChansMutex.Unlock()
 
-	if _, ok := signalChans[name]; ok {
+	if _, ok := e.signalChans[name]; ok {
 		return nil, ErrNameAlreadyExists
 	}
 
 	signalChan := make(SignalChan, 1)
-	signalChans[name] = signalChan
+	e.signalChans[name] = signalChan
 	return signalChan, nil
 }
 
 // Exit sends an ErrChan through all the previously generated SignalChans
 // and waits until all returned an error or nil. The received errors will be
 // returned in an error report.
-func Exit() *Report {
-	signalChansMutex.Lock()
-	defer signalChansMutex.Unlock()
+func (e *Exit) Exit() *Report {
+	e.signalChansMutex.Lock()
+	defer e.signalChansMutex.Unlock()
 
-	report := NewReport()
+	report := NewReport(e.Name)
 	wg := &sync.WaitGroup{}
-	for name, signalChan := range signalChans {
+	for name, signalChan := range e.signalChans {
 		wg.Add(1)
 		go func(name string, signalChan SignalChan) {
-			if err := exit(name, signalChan); err != nil {
+			if err := e.exit(name, signalChan); err != nil {
 				report.Set(name, err)
 			}
 			wg.Done()
 		}(name, signalChan)
-		delete(signalChans, name)
+		delete(e.signalChans, name)
 	}
 	wg.Wait()
 
@@ -82,36 +93,28 @@ func Exit() *Report {
 	return report
 }
 
-// Reset removes all created SignalChans without sending the exit signal.
-func Reset() {
-	signalChansMutex.Lock()
-	defer signalChansMutex.Unlock()
-
-	signalChans = make(map[string]SignalChan)
-}
-
 // ExitOn blocks until the process receives one of the provided signals and
 // than calls Exit.
-func ExitOn(osSignales ...os.Signal) *Report {
+func (e *Exit) ExitOn(osSignales ...os.Signal) *Report {
 	osSignalChan := make(chan os.Signal)
 	signal.Notify(osSignalChan, osSignales...)
 	<-osSignalChan
 
-	return Exit()
+	return e.Exit()
 }
 
-func exit(name string, signalChan SignalChan) error {
+func (e *Exit) exit(name string, signalChan SignalChan) error {
 	errChan := make(ErrChan)
 	signalChan <- errChan
 
-	if timeout == 0 {
+	if e.timeout == 0 {
 		return <-errChan
 	}
 
 	select {
 	case err := <-errChan:
 		return err
-	case <-time.After(timeout):
+	case <-time.After(e.timeout):
 		return ErrTimeout
 	}
 }

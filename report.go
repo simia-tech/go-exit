@@ -25,15 +25,18 @@ import (
 // Report defines the report of the exit process. It contains map of all
 // signal names with thier returned error.
 type Report struct {
+	ExitName string
+
 	errors map[string]error
 	mutex  *sync.RWMutex
 }
 
 // NewReport returns a new initialized Report.
-func NewReport() *Report {
+func NewReport(exitName string) *Report {
 	return &Report{
-		errors: make(map[string]error),
-		mutex:  &sync.RWMutex{},
+		ExitName: exitName,
+		errors:   make(map[string]error),
+		mutex:    &sync.RWMutex{},
 	}
 }
 
@@ -68,7 +71,7 @@ func (r *Report) WriteTo(w io.Writer) (int64, error) {
 
 	total := int64(0)
 	for _, name := range r.sortedNames() {
-		n, err := fmt.Fprintf(w, "%s: %v\n", name, r.errors[name])
+		n, err := fmt.Fprintf(w, "%s-%s: %v\n", r.ExitName, name, r.errors[name])
 		if err != nil {
 			return total, err
 		}
@@ -84,7 +87,7 @@ func (r *Report) Error() string {
 
 	var parts []string
 	for _, name := range r.sortedNames() {
-		parts = append(parts, fmt.Sprintf("%s: %v", name, r.errors[name]))
+		parts = append(parts, fmt.Sprintf("%s-%s: %v", r.ExitName, name, r.errors[name]))
 	}
 	return strings.Join(parts, " / ")
 }

@@ -23,18 +23,18 @@ import (
 )
 
 func TestReportWriteTo(t *testing.T) {
-	report := exit.NewReport()
+	report := exit.NewReport("test")
 	report.Set("one", exit.ErrTimeout)
 
 	buffer := &bytes.Buffer{}
 	bytes, err := report.WriteTo(buffer)
 	assertNil(t, err)
-	assertEqual(t, int64(13), bytes)
-	assertEqual(t, "one: timeout\n", buffer.String())
+	assertEqual(t, int64(18), bytes)
+	assertEqual(t, "test-one: timeout\n", buffer.String())
 }
 
 func TestReportWriteToFailingWriter(t *testing.T) {
-	report := exit.NewReport()
+	report := exit.NewReport("test")
 	report.Set("one", exit.ErrTimeout)
 
 	r, w := io.Pipe()
@@ -44,10 +44,10 @@ func TestReportWriteToFailingWriter(t *testing.T) {
 }
 
 func TestReportErrorInterface(t *testing.T) {
-	report := exit.NewReport()
+	report := exit.NewReport("test")
 	report.Set("one", exit.ErrTimeout)
 	report.Set("two", exit.ErrTimeout)
 
 	var err error = report
-	assertEqual(t, "one: timeout / two: timeout", err.Error())
+	assertEqual(t, "test-one: timeout / test-two: timeout", err.Error())
 }
