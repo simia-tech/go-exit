@@ -19,7 +19,7 @@ import "time"
 // Signal defines an exit signal signal for a single actor.
 type Signal struct {
 	Name string
-	Chan chan ErrChan
+	Chan chan Reply
 
 	timeout time.Duration
 }
@@ -28,7 +28,7 @@ type Signal struct {
 func NewSignal(name string) *Signal {
 	return &Signal{
 		Name: name,
-		Chan: make(chan ErrChan),
+		Chan: make(chan Reply),
 	}
 }
 
@@ -45,21 +45,21 @@ func (s *Signal) HasTimeout() bool {
 
 // Exit performs the exit process for this specific signal.
 func (s *Signal) Exit() error {
-	errChan := make(ErrChan)
+	reply := make(Reply)
 
 	if !s.HasTimeout() {
-		s.Chan <- errChan
-		return <-errChan
+		s.Chan <- reply
+		return <-reply
 	}
 
 	select {
-	case s.Chan <- errChan:
+	case s.Chan <- reply:
 	case <-time.After(s.timeout):
 		return ErrTimeout
 	}
 
 	select {
-	case err := <-errChan:
+	case err := <-reply:
 		return err
 	case <-time.After(s.timeout):
 		return ErrTimeout

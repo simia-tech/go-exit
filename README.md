@@ -20,10 +20,10 @@ func main() {
 	go func() {
 		counter := 0
 
-		var errChan exit.ErrChan
-		for errChan == nil {
+		var reply exit.Reply
+		for reply == nil {
 			select {
-			case errChan = <-counterExitSignal.Chan:
+			case reply = <-counterExitSignal.Chan:
 				break
 			case <-time.After(1 * time.Second):
 				counter++
@@ -33,13 +33,13 @@ func main() {
 
 		switch {
 		case counter%5 == 0:
-			// Don't send a return via errChan to simulate
+			// Don't send a return via reply to simulate
 			// an infinite running go routine. The timeout
 			// should be hit in this case.
 		case counter%2 == 1:
-			errChan <- fmt.Errorf("exit on the odd counter %d", counter)
+			reply.Err(fmt.Errorf("exit on the odd counter %d", counter))
 		default:
-			errChan <- nil
+			reply.Ok()
 		}
 	}()
 

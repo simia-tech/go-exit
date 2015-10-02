@@ -12,35 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package exit_test
+package exit
 
-import (
-	"testing"
-	"time"
+// Reply defines a channel of errors that can be used to deliver back
+// an error after an actor has shut down.
+type Reply chan error
 
-	"github.com/simia-tech/go-exit"
-)
-
-func TestSignalExitWithoutTimeout(t *testing.T) {
-	exitSignal := exit.NewSignal("one")
-	go func() {
-		reply := <-exitSignal.Chan
-		reply <- nil
-	}()
-
-	err := exitSignal.Exit()
-	assertNil(t, err)
+// Err reports back the provided error.
+func (r Reply) Err(err error) {
+	r <- err
 }
 
-func TestSignalExitWithTimeout(t *testing.T) {
-	exitSignal := exit.NewSignal("one")
-	exitSignal.SetTimeout(50 * time.Millisecond)
-	go func() {
-		reply := <-exitSignal.Chan
-		time.Sleep(100 * time.Millisecond)
-		reply <- nil
-	}()
-
-	err := exitSignal.Exit()
-	assertEqual(t, exit.ErrTimeout, err)
+// Ok report back no error. Same as Err(nil).
+func (r Reply) Ok() {
+	r <- nil
 }

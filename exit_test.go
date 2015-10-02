@@ -28,8 +28,8 @@ func TestExitWithoutError(t *testing.T) {
 
 	exitSignal := e.NewSignal("one")
 	go func() {
-		errChan := <-exitSignal.Chan
-		errChan <- nil
+		reply := <-exitSignal.Chan
+		reply <- nil
 	}()
 
 	report := e.Exit()
@@ -41,14 +41,14 @@ func TestExitOfTwoGoroutines(t *testing.T) {
 
 	exitSignalOne := e.NewSignal("one")
 	go func() {
-		errChan := <-exitSignalOne.Chan
-		errChan <- fmt.Errorf("err one")
+		reply := <-exitSignalOne.Chan
+		reply <- fmt.Errorf("err one")
 	}()
 
 	exitSignalTwo := e.NewSignal("two")
 	go func() {
-		errChan := <-exitSignalTwo.Chan
-		errChan <- fmt.Errorf("err two")
+		reply := <-exitSignalTwo.Chan
+		reply <- fmt.Errorf("err two")
 	}()
 
 	report := e.Exit()
@@ -63,8 +63,8 @@ func TestExitWithTimeout(t *testing.T) {
 
 	exitSignalOne := e.NewSignal("one")
 	go func() {
-		errChan := <-exitSignalOne.Chan
-		errChan <- nil
+		reply := <-exitSignalOne.Chan
+		reply <- nil
 	}()
 	exitSignalTwo := e.NewSignal("two")
 	go func() {
@@ -83,8 +83,8 @@ func TestExitOnSignal(t *testing.T) {
 
 	exitSignal := e.NewSignal("one")
 	go func() {
-		errChan := <-exitSignal.Chan
-		errChan <- nil
+		reply := <-exitSignal.Chan
+		reply <- nil
 	}()
 
 	go func() {

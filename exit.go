@@ -21,10 +21,6 @@ import (
 	"time"
 )
 
-// ErrChan defines a channel of errors that can be used to deliver back
-// an error after an actor has shut down.
-type ErrChan chan error
-
 // Exit defines an exit that contains multiple SignalChans.
 type Exit struct {
 	Name string
