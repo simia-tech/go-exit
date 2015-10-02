@@ -25,7 +25,7 @@ func TestSignalExitWithoutTimeout(t *testing.T) {
 	exitSignal := exit.NewSignal("one")
 	go func() {
 		reply := <-exitSignal.Chan
-		reply <- nil
+		reply.Ok()
 	}()
 
 	err := exitSignal.Exit()
@@ -38,7 +38,7 @@ func TestSignalExitWithTimeout(t *testing.T) {
 	go func() {
 		reply := <-exitSignal.Chan
 		time.Sleep(100 * time.Millisecond)
-		reply <- nil
+		reply.Ok()
 	}()
 
 	err := exitSignal.Exit()
