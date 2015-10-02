@@ -54,7 +54,7 @@ func main() {
 
 The default exit `exit.Main` should be used by the main program to exit it's go routines. If `go-exit` is used
 in a library, a separate exit should be created and used to end the library's go routines. This way the library
-stays independent from other exit routines.
+stays independent from other exit code.
 
 ## Example (library)
 
@@ -85,7 +85,8 @@ func (s *Server) Open() error {
 			for {
 				connection, err := listener.Accept()
 				if err != nil {
-					if reply != nil && strings.Contains(err.Error(), "closed network connection") {
+					if reply != nil && strings.Contains(
+						err.Error(), "closed network connection") {
 						reply.Ok()
 					} else {
 						reply.Err(err)
