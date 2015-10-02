@@ -10,7 +10,7 @@ The library helps to end the go routines in your program and collects potential 
 
 `go get github.com/simia-tech/go-exit`
 
-## Example
+## Example (main)
 
 ```go
 func main() {
@@ -49,6 +49,68 @@ func main() {
 		os.Exit(-1)
 	}
 	fmt.Println()
+}
+```
+
+The default exit `exit.Main` should be used by the main program to exit it's go routines. If `go-exit` is used
+in a library, a separate exit should be created and used to end the library's go routines. This way the library
+stays independent from other exit routines.
+
+## Example (library)
+
+```go
+type Server struct {
+	Address string
+	exit    *exit.Exit
+}
+
+func New(address string) *Server {
+	return &Server{
+		Address: address,
+		exit:    exit.New("server"),
+	}
+}
+
+func (s *Server) Open() error {
+	listener, err := net.Listen("tcp", s.Address)
+	if err != nil {
+		return err
+	}
+
+	signal := s.exit.NewSignal("acceptor")
+	go func() {
+		var reply exit.Reply
+
+		go func() {
+			for {
+				connection, err := listener.Accept()
+				if err != nil {
+					if reply != nil && strings.Contains(err.Error(), "closed network connection") {
+						reply.Ok()
+					} else {
+						reply.Err(err)
+					}
+					return
+				}
+				log.Printf("connected %v", connection.RemoteAddr())
+				// handle connection
+			}
+		}()
+
+		reply = <-signal.Chan
+		if err := listener.Close(); err != nil {
+			reply.Err(err)
+		}
+	}()
+
+	return nil
+}
+
+func (s *Server) Close() error {
+	if report := s.exit.Exit(); report != nil {
+		return report
+	}
+	return nil
 }
 ```
 
