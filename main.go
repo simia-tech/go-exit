@@ -15,5 +15,5 @@
 package exit
 
 // Main defines the main exit. This exit should be used by the main program.
-// Libraries should create thier own exit.
+// Libraries should create their own exit.
 var Main = New("main")
