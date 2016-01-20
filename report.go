@@ -23,7 +23,7 @@ import (
 )
 
 // Report defines the report of the exit process. It contains map of all
-// signal names with thier returned error.
+// signal names with their returned error.
 type Report struct {
 	ExitName string
 
